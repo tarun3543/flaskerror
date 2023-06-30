@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ChatMate</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            height: 600px;
+            margin: 50px auto;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+        }
+
+        .chat-header h2 {
+            margin: 0;
+            text-align: center;
+        }
+
+        .chat-log {
+            flex-grow: 1;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .user-message {
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .bot-message {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .message-content {
+            background-color: #f2f2f2;
+            color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        .user-message .message-content {
+            margin-left: 10px;
+            background-color: #4caf50;
+            color: #fff;
+        }
+
+        .bot-message .message-content {
+            margin-right: 10px;
+            background-color: #ddd;
+        }
+
+        .chat-input-container {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 5px;
+            height: 80px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 2px;
+            resize: none;
+            height: 20%;
+            min-height: 18px;
+            max-height: 10px;
+            overflow-y: auto;
+            width: 650px;
+        }
+
+        .send-button {
+            margin-left: 10px;
+            padding: 10px 20px;
+            background-color: #4caf50;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .send-button:hover {
+            background-color: #45a049;
+        }
+
+        .message-avatar {
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+            margin-top: 3px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* Additional Styles for Professional Look */
+        .professional {
+            background-color: #f2f2f2;
+            color: #333;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .professional p {
+            margin: 5px 0;
+        }
+
+        .professional .title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chat-header">
+            <h2>ChatMate</h2>
+        </div>
+        <div class="chat-log" id="chat-log">
+            <!-- Add a welcome message as the initial bot message -->
+            <div class="bot-message professional">
+                <img class="message-avatar" src="static/bot-avatar.png" alt="Bot Avatar">
+                <div class="content">
+                    <p class="title">Welcome to ChatMate!</p>
+                    <p>How can I assist you today?</p>
+                </div>
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <form id="chat-form">
+                <input type="text" id="user-input" class="chat-input" placeholder="Type your message..." autofocus>
+                <button class="send-button" type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const chatLog = document.getElementById('chat-log');
+        const userInput = document.getElementById('user-input');
+
+        chatForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const userMessage = userInput.value.trim();
+            if (userMessage === '') return;
+            appendUserMessage(userMessage);
+            processUserMessage(userMessage);
+            userInput.value = '';
+        });
+
+        userInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                chatForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        function appendUserMessage(message) {
+            const userMessageElement = `
+                <div class="user-message professional">
+                    <div class="content">
+                        <p class="title">You</p>
+                        <p>${message}</p>
+                    </div>
+                    <img class="message-avatar" src="static/user-avatar.png" alt="User Avatar">
+                </div>
+            `;
+            chatLog.innerHTML += userMessageElement;
+            scrollToBottom();
+        }
+
+        function appendBotMessage(message) {
+            const botMessageElement = `
+                <div class="bot-message professional">
+                    <img class="message-avatar" src="static/bot-avatar.png" alt="Bot Avatar">
+                    <div class="content">
+                        <p class="title">ChatMate</p>
+                        <p>${message}</p>
+                    </div>
+                </div>
+            `;
+            chatLog.innerHTML += botMessageElement;
+            scrollToBottom();
+        }
+
+        function processUserMessage(message) {
+            fetch('/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_input: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                appendBotMessage(data.response);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function scrollToBottom() {
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+    </script>
+</body>
+</html>
